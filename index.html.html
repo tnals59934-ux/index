@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>불규칙 동사 테스트 (AAA형 & ABB형)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 12px;
+    background: #f1f5f9;
+    color: #1e293b;
+  }
+  .header {
+    text-align: center;
+    background: #ffffff;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin-bottom: 12px;
+  }
+  h2 { margin: 0 0 10px 0; font-size: 1.15rem; }
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-shuffle { background: #3b82f6; color: white; }
+  .btn-check { background: #10b981; color: white; }
+  .score-box {
+    margin-top: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #0f172a;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  th, td {
+    border: 1px solid #e2e8f0;
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 13px;
+  }
+  th { background: #f8fafc; font-weight: 600; }
+  .base-word { font-weight: bold; color: #2563eb; }
+  input[type="text"] {
+    width: 95%;
+    padding: 6px 2px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 13px;
+    text-align: center;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  input[type="text"]:focus {
+    border-color: #3b82f6;
+    background: #eff6ff;
+  }
+  .correct { background-color: #dcfce7 !important; border-color: #22c55e !important; }
+  .incorrect { background-color: #fee2e2 !important; border-color: #ef4444 !important; }
+  .ans-hint {
+    display: none;
+    color: #dc2626;
+    font-size: 11px;
+    margin-top: 2px;
+    font-weight: 600;
+    word-break: break-all;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h2>불규칙 동사 [AAA & ABB형] 테스트</h2>
+  <div class="controls">
+    <button class="btn-shuffle" onclick="renderTable()">단어 섞기</button>
+    <button class="btn-check" onclick="checkAnswers()">채점하기</button>
+  </div>
+  <div id="scoreBox" class="score-box"></div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 25%;">의미</th>
+      <th style="width: 25%;">원형</th>
+      <th style="width: 25%;">과거형</th>
+      <th style="width: 25%;">과거분사</th>
+    </tr>
+  </thead>
+  <tbody id="quizTableBody"></tbody>
+</table>
+
+<script>
+// 사진 속 AAA형(9개) + ABB형(33개) 데이터
+const verbData = [
+  // AAA형 (9개)
+  { type: "AAA", base: "hit", past: "hit", pp: "hit", mean: "치다" },
+  { type: "AAA", base: "cost", past: "cost", pp: "cost", mean: "비용이 들다" },
+  { type: "AAA", base: "cut", past: "cut", pp: "cut", mean: "자르다" },
+  { type: "AAA", base: "quit", past: "quit", pp: "quit", mean: "그만두다" },
+  { type: "AAA", base: "set", past: "set", pp: "set", mean: "놓다" },
+  { type: "AAA", base: "hurt", past: "hurt", pp: "hurt", mean: "아프다" },
+  { type: "AAA", base: "let", past: "let", pp: "let", mean: "하게 하다" },
+  { type: "AAA", base: "put", past: "put", pp: "put", mean: "놓다" },
+  { type: "AAA", base: "read", past: "read", pp: "read", mean: "읽다" },
+
+  // ABB형 (33개)
+  { type: "ABB", base: "bring", past: "brought", pp: "brought", mean: "가져오다" },
+  { type: "ABB", base: "build", past: "built", pp: "built", mean: "짓다" },
+  { type: "ABB", base: "buy", past: "bought", pp: "bought", mean: "사다" },
+  { type: "ABB", base: "catch", past: "caught", pp: "caught", mean: "붙잡다" },
+  { type: "ABB", base: "feed", past: "fed", pp: "fed", mean: "먹이를 주다" },
+  { type: "ABB", base: "feel", past: "felt", pp: "felt", mean: "느끼다" },
+  { type: "ABB", base: "fight", past: "fought", pp: "fought", mean: "싸우다" },
+  { type: "ABB", base: "find", past: "found", pp: "found", mean: "발견하다" },
+  { type: "ABB", base: "get", past: "got", pp: "got", mean: "얻다" },
+  { type: "ABB", base: "hang", past: "hung", pp: "hung", mean: "걸다" },
+  { type: "ABB", base: "have", past: "had", pp: "had", mean: "갖다, 먹다" },
+  { type: "ABB", base: "hear", past: "heard", pp: "heard", mean: "듣다" },
+  { type: "ABB", base: "hold", past: "held", pp: "held", mean: "들다, 쥐다" },
+  { type: "ABB", base: "keep", past: "kept", pp: "kept", mean: "지키다" },
+  { type: "ABB", base: "lead", past: "led", pp: "led", mean: "인도하다" },
+  { type: "ABB", base: "leave", past: "left", pp: "left", mean: "떠나다" },
+  { type: "ABB", base: "lay", past: "laid", pp: "laid", mean: "놓다, 두다" },
+  { type: "ABB", base: "lose", past: "lost", pp: "lost", mean: "잃다, 지다" },
+  { type: "ABB", base: "make", past: "made", pp: "made", mean: "만들다" },
+  { type: "ABB", base: "mean", past: "meant", pp: "meant", mean: "의미하다" },
+  { type: "ABB", base: "meet", past: "met", pp: "met", mean: "만나다" },
+  { type: "ABB", base: "pay", past: "paid", pp: "paid", mean: "지불하다" },
+  { type: "ABB", base: "say", past: "said", pp: "said", mean: "말하다" },
+  { type: "ABB", base: "sell", past: "sold", pp: "sold", mean: "팔다" },
+  { type: "ABB", base: "send", past: "sent", pp: "sent", mean: "보내다" },
+  { type: "ABB", base: "sit", past: "sat", pp: "sat", mean: "앉다" },
+  { type: "ABB", base: "sleep", past: "slept", pp: "slept", mean: "잠자다" },
+  { type: "ABB", base: "spend", past: "spent", pp: "spent", mean: "(시간)보내다" },
+  { type: "ABB", base: "stand", past: "stood", pp: "stood", mean: "일어서다" },
+  { type: "ABB", base: "teach", past: "taught", pp: "taught", mean: "가르치다" },
+  { type: "ABB", base: "tell", past: "told", pp: "told", mean: "말하다" },
+  { type: "ABB", base: "think", past: "thought", pp: "thought", mean: "생각하다" },
+  { type: "ABB", base: "win", past: "won", pp: "won", mean: "이기다" }
+];
+
+function shuffle(array) {
+  let arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function renderTable() {
+  const currentList = shuffle(verbData);
+  const tbody = document.getElementById("quizTableBody");
+  tbody.innerHTML = "";
+  document.getElementById("scoreBox").innerText = "";
+
+  currentList.forEach((item) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${item.mean}</td>
+      <td class="base-word">${item.base}</td>
+      <td>
+        <input type="text" data-ans="${item.past}" autocapitalize="none" autocomplete="off">
+        <div class="ans-hint">${item.past}</div>
+      </td>
+      <td>
+        <input type="text" data-ans="${item.pp}" autocapitalize="none" autocomplete="off">
+        <div class="ans-hint">${item.pp}</div>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+function checkAnswers() {
+  const inputs = document.querySelectorAll("#quizTableBody input");
+  let correctCount = 0;
+  const totalCount = inputs.length;
+
+  inputs.forEach(input => {
+    const expected = input.getAttribute("data-ans").toLowerCase().split(",");
+    const actual = input.value.trim().toLowerCase();
+    const hint = input.nextElementSibling;
+
+    if (actual !== "" && expected.includes(actual)) {
+      input.className = "correct";
+      hint.style.display = "none";
+      correctCount++;
+    } else {
+      input.className = "incorrect";
+      hint.style.display = "block";
+    }
+  });
+
+  const percentage = Math.round((correctCount / totalCount) * 100);
+  document.getElementById("scoreBox").innerText = `점수: ${correctCount}/${totalCount} (${percentage}점)`;
+}
+
+window.onload = renderTable;
+</script>
+</body>
+</html>
